@@ -1,0 +1,66 @@
+/* Footer container */
+.biominer-footer {
+  background: #f3e8ff; /* same as header */
+  padding: 1rem 1rem; /* reduced height */
+  position: relative;
+  z-index: 50;
+  backdrop-filter: blur(10px);
+}
+
+/* Footer sections */
+.footer-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* align content left like header logo */
+  gap: 0.75rem; /* slightly more spacing */
+}
+
+/* Footer links */
+.footer-link {
+  color: #4b5563; /* neutral text */
+  font-size: 1.15rem; /* slightly larger font */
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s ease, transform 0.2s ease;
+  position: relative;
+}
+
+/* Hover effect */
+.footer-link:hover {
+  color: #6d28d9; /* purple hover */
+  transform: translateY(-2px); /* subtle lift for accent */
+}
+
+/* Active/important link styling */
+.footer-link.active {
+  color: #6d28d9;
+}
+
+.footer-link.active::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #6d28d9; /* purple underline */
+  border-radius: 2px;
+}
+
+/* Optional: small decorative purple accents */
+.footer-section::before {
+  content: "";
+  display: block;
+  width: 40px;
+  height: 3px;
+  background-color: #6d28d9;
+  margin-bottom: 0.5rem;
+  border-radius: 2px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .footer-section span:last-child {
+    display: none;
+  }
+}

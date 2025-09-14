@@ -1,0 +1,107 @@
+.biominer-header {
+  background: #f3e8ff; /* light purple background */
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(10px);
+}
+
+.biominer-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* Navigation link base */
+.nav-link {
+  font-size: 1.1rem !important;
+  padding: 0.5rem 1rem !important;
+  font-weight: 500;
+  color: #4b5563; /* neutral text */
+  background-color: #f3e8ff !important;
+  margin: 1rem;
+  border: none; /* remove border */
+  border-radius: 0; /* no rounded corners */
+  position: relative; /* needed for underline */
+  transition: color 0.2s ease;
+}
+
+/* Active tab underline */
+.nav-link.active {
+  color: #6d28d9; /* dark purple text */
+}
+
+.nav-link.active::after {
+  content: "";
+  position: absolute;
+  bottom: -4px; /* space below text */
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #6d28d9; /* purple underline */
+  border-radius: 2px;
+}
+
+/* Hover effect */
+.nav-link:hover {
+  color: #6d28d9;
+}
+
+/* Mobile: hide subtitle */
+@media (max-width: 768px) {
+  .biominer-logo span:last-child {
+    display: none;
+  }
+}
+
+
+/* Dropdown Menu Container */
+.dropdown-menu-content {
+  background-color: #faf5ff; /* light purple/white */
+  border-radius: 0.75rem; /* rounded corners */
+  box-shadow: 0 4px 16px rgba(128, 90, 213, 0.25); /* purple shadow */
+  padding: 0.5rem 0;
+  min-width: 180px;
+  border: 1px solid #e0d4ff; /* subtle border */
+  z-index: 50;
+}
+
+/* Dropdown Menu Items */
+.dropdown-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  color: #4c1d95; /* dark purple text */
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+/* Hover effect for items */
+.dropdown-menu-item:hover {
+  background: linear-gradient(90deg, #7c3aed, #9d4edd); /* purple gradient */
+  color: white;
+  transform: translateX(2px);
+}
+
+/* Optional: Icon inside dropdown */
+.dropdown-menu-item span.icon {
+  font-size: 1.25rem;
+}
+
+/* Trigger Button for Dropdown */
+.dropdown-menu-trigger {
+  background-color: #7c3aed; /* purple */
+  color: white;
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.dropdown-menu-trigger:hover {
+  background-color: #9333ea; /* darker purple on hover */
+  transform: scale(1.05);
+}
