@@ -446,29 +446,88 @@ if __name__ == "__main__":
     # ----- Dummy dataset directly in the code -----
     dummy_data = """
 t # 0
-v 0 A
-v 1 B
-v 2 C
-e 0 1 X 0.9
-e 1 2 Y 0.8
-e 0 2 Z 0.5
+v 0 1
+v 1 2
+v 2 2
+v 3 7
+e 0 3 3 0.7
+e 1 2 1 0.4
+e 1 3 1 0.9
+e 2 3 2 0.2
 
 t # 1
-v 0 A
-v 1 B
-v 2 D
-v 3 C
-e 0 1 X 0.7
-e 1 2 Y 0.6
-e 2 3 Z 0.9
-e 0 3 X 0.4
+v 0 0
+v 1 1
+v 2 2
+v 3 5
+v 4 5
+e 0 1 3 0.4
+e 0 2 2 0.5
+e 1 2 1 0.7
+e 1 3 1 0.6
+e 2 4 1 0.2
 
 t # 2
-v 0 B
-v 1 C
-v 2 D
-e 0 1 Y 0.95
-e 1 2 Z 0.85
+v 0 0
+v 1 1
+v 2 2
+v 3 2
+e 0 1 2 0.3
+e 0 2 1 0.4
+e 0 3 1 0.2
+e 1 2 1 0.8
+e 1 3 1 0.9
+
+t # 3
+v 0 0
+v 1 1
+v 2 2
+v 3 2
+v 4 7
+e 0 1 2 0.5
+e 0 2 1 0.6
+e 1 2 1 0.1
+e 2 3 1 0.3
+e 2 4 2 0.4
+e 3 4 1 0.5
+
+t # 4
+v 0 1
+v 1 2
+v 2 2
+v 3 3
+v 4 6
+v 5 0
+e 0 1 1 0.2
+e 0 2 4 0.3
+e 0 3 1 0.4
+e 0 5 2 0.5
+e 2 3 2 0.6
+e 2 5 1 0.7
+e 3 4 3 0.8
+
+t # 5
+v 0 1
+v 1 2
+v 2 3
+v 3 6
+e 0 2 1 0.9
+e 0 3 1 0.8
+e 1 2 2 0.3
+e 2 3 3 0.4
+
+t # 6
+v 0 5
+v 1 2
+v 2 1
+v 3 0
+v 4 0
+v 5 2
+e 0 1 1 0.1
+e 1 2 1 0.2
+e 2 3 3 0.2
+e 2 4 2 0.4
+e 4 5 1 0.9
 """
 
     # Write dummy data to a temporary file
@@ -481,7 +540,7 @@ e 1 2 Z 0.85
 
     # ----- Set parameters -----
     k = 3       # top-3 subgraphs
-    eps = 0.3   # approximation error
+    eps = 0.1   # approximation error
     delta = 0.3 # failure probability
 
     # ----- Run mining -----

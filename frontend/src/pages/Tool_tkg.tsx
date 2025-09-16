@@ -12,6 +12,11 @@ import './Tool_scp.css';
 
 type Step = 'upload' | 'parameters' | 'results';
 
+interface ImageData {
+  filename: string;
+  data: string;
+}
+
 const Tool2 = () => {
   const [currentStep, setCurrentStep] = useState<Step>('upload');
   const [progress, setProgress] = useState(0);
@@ -32,7 +37,7 @@ const Tool2 = () => {
   // results + UI
   const [isRunning, setIsRunning] = useState(false);
   const [results, setResults] = useState<any>(null);
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<ImageData[]>([]);
   const [isCarouselVisible, setCarouselVisible] = useState(false);
 
   // file preview modal
@@ -40,7 +45,7 @@ const Tool2 = () => {
 
   const dropRef = useRef<HTMLDivElement | null>(null);
 
-  const backendURL = "http://127.0.0.1:8000";
+  const backendURL = "http://127.0.0.1:8001";
 
   // ------------------------
   // FILE HANDLING
@@ -130,51 +135,54 @@ const Tool2 = () => {
     }
   };
 
-const runAlgorithm = async () => {
-  if (!uploadedFile) {
-    setError("No file uploaded.");
-    return;
-  }
-
-  setIsRunning(true);
-  setError('');
-
-  try {
-    const formData = new FormData();
-    formData.append("file_upload", uploadedFile);
-    formData.append("k", k.toString());
-    formData.append("epsilon", epsilon.toString());
-    formData.append("delta", delta.toString());
-
-    const response = await fetch(`${backendURL}/run-tusm/`, {
-      method: "POST",
-      body: formData,
-    });
-
-    if (!response.ok) throw new Error(`Algorithm run failed (${response.status})`);
-
-    const data = await response.json();
-    console.log("Run response:", data);
-
-    // Save results
-    setResults(data);
-    if (data.top_k_subgraphs) {
-      setImages([]); // clear old images if not applicable
-      // Optional: render DFS codes as images on backend if available
+  // ------------------------
+  // RUN ALGORITHM
+  // ------------------------
+  const runAlgorithm = async () => {
+    if (!uploadedFile) {
+      setError("No file uploaded.");
+      return;
     }
 
-    // Move to results step
-    setCurrentStep('results');
-    setProgress(100);
+    setIsRunning(true);
+    setError('');
 
-  } catch (err) {
-    console.error("Error running algorithm:", err);
-    // setError("Run failed. See console for details.");
-  } finally {
-    setIsRunning(false);
-  }
-};
+    try {
+      const formData = new FormData();
+      formData.append("file_upload", uploadedFile);
+      formData.append("k", k.toString());
+      formData.append("epsilon", epsilon.toString());
+      formData.append("delta", delta.toString());
 
+      const response = await fetch(`${backendURL}/run-tusm/`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error(`Algorithm run failed (${response.status})`);
+
+      const data = await response.json();
+      console.log("Run response:", data);
+
+      // Save results
+      setResults(data);
+      if (data.images) {
+        setImages(data.images); // save base64 images
+      } else {
+        setImages([]); // clear old images if none returned
+      }
+
+      // Move to results step
+      setCurrentStep('results');
+      setProgress(100);
+
+    } catch (err) {
+      console.error("Error running algorithm:", err);
+      setError("Run failed. See console for details.");
+    } finally {
+      setIsRunning(false);
+    }
+  };
 
   // ------------------------
   // DOWNLOAD RESULTS (zip)
@@ -185,17 +193,21 @@ const runAlgorithm = async () => {
     const folder = zip.folder("results");
 
     for (let i = 0; i < images.length; i++) {
-      const url = `${backendURL}${images[i]}`; // images[i] already contains /images/...
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const arrayBuffer = await blob.arrayBuffer();
-      folder?.file(`result_${i + 1}${blob.type === "image/png" ? ".png" : ".jpg"}`, arrayBuffer);
+      const base64Data = images[i].data;
+      const byteString = atob(base64Data); // decode base64
+      const arrayBuffer = new Uint8Array(byteString.length);
+
+      for (let j = 0; j < byteString.length; j++) {
+        arrayBuffer[j] = byteString.charCodeAt(j);
+      }
+
+      const blob = new Blob([arrayBuffer], { type: "image/png" });
+      folder?.file(`result_${i + 1}.png`, blob);
     }
 
     const content = await zip.generateAsync({ type: "blob" });
     saveAs(content, "results.zip");
   };
-
   // modal helpers
   const openCarouselModal = () => setCarouselVisible(true);
   const closeCarouselModal = () => setCarouselVisible(false);
@@ -542,26 +554,26 @@ const runAlgorithm = async () => {
 
     </CardContent>
     {/* Carousel modal */}
-        {isCarouselVisible && (
-          <div className="modal-overlay" onClick={closeCarouselModal}>
-            <div className="modal-result-content" onClick={(e) => e.stopPropagation()}>
-              <button onClick={closeCarouselModal} className="close-modal-button">X</button>
-              <p className="result-text">Top K Frequent Patterns</p>
-              <p className="result-text">
-                K: {k} &nbsp; ε: {epsilon} &nbsp; δ: {delta}
-              </p>
-              <div className="step-box">
-                <Carousel showThumbs={false} infiniteLoop useKeyboardArrows>
-                  {images.map((url, idx) => (
-                    <div key={idx}>
-                      <img src={`${backendURL}${url}`} alt={`SCP ${idx}`} />
-                    </div>
-                  ))}
-                </Carousel>
-              </div>
+{isCarouselVisible && (
+  <div className="modal-overlay" onClick={closeCarouselModal}>
+    <div className="modal-result-content" onClick={(e) => e.stopPropagation()}>
+      <button onClick={closeCarouselModal} className="close-modal-button">X</button>
+      <p className="result-text">Top K Frequent Patterns</p>
+      <p className="result-text">
+        K: {k} &nbsp; ε: {epsilon} &nbsp; δ: {delta}
+      </p>
+      <div className="step-box">
+        <Carousel showThumbs={false} infiniteLoop useKeyboardArrows>
+          {images.map((img, idx) => (
+            <div key={idx}>
+              <img src={`data:image/png;base64,${img.data}`} alt={`SCP ${idx}`} />
             </div>
-          </div>
-        )}
+          ))}
+        </Carousel>
+      </div>
+    </div>
+  </div>
+)}
   </div>
 )}
 
