@@ -184,20 +184,31 @@ const Tool1 = () => {
   // ------------------------
   const handleDownloadResults = async () => {
     if (!images.length) return;
+
     const zip = new JSZip();
     const folder = zip.folder("results");
 
     for (let i = 0; i < images.length; i++) {
-      const url = `${backendURL}${images[i]}`; // images[i] already contains /images/...
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const arrayBuffer = await blob.arrayBuffer();
-      folder?.file(`result_${i + 1}${blob.type === "image/png" ? ".png" : ".jpg"}`, arrayBuffer);
+      const url = `${backendURL}${images[i]}`;
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+          console.error("Failed to fetch", url);
+          continue;
+        }
+        const blob = await response.blob();
+        const arrayBuffer = await blob.arrayBuffer();
+        const ext = blob.type.split("/")[1] || "jpg";
+        folder.file(`result_${i + 1}.${ext}`, arrayBuffer);
+      } catch (err) {
+        console.error("Error fetching file", url, err);
+      }
     }
 
     const content = await zip.generateAsync({ type: "blob" });
     saveAs(content, "results.zip");
   };
+
 
   // modal helpers
   const openCarouselModal = () => setCarouselVisible(true);
