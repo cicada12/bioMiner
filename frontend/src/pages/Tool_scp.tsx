@@ -29,6 +29,11 @@ const Tool1 = () => {
   const [maxOverlap, setMaxOverlap] = useState(0.5);
   const [minCoverage, setMinCoverage] = useState(0.5);
 
+  // stats
+  const [stats, setStats] = useState<any>(null);
+  const [statsVisible, setStatsVisible] = useState(false);
+
+
   // results + UI
   const [isRunning, setIsRunning] = useState(false);
   const [results, setResults] = useState<any>(null);
@@ -129,6 +134,48 @@ const Tool1 = () => {
       // setError("File upload failed. See console for details.");
     }
   };
+
+
+   // ------------------------
+  //  View Stats Button Logic
+  // ------------------------
+  const handleViewStats = async () => {
+    // If stats are visible, hide them (toggle OFF)
+    if (statsVisible) {
+      setStatsVisible(false);
+      return;
+    }
+  
+    // Otherwise, show stats (toggle ON) and fetch
+    setStatsVisible(true);
+    setStats(null);
+  
+    const formData = new FormData();
+  
+    if (dataset) {
+      formData.append("use_dummy", "true");
+      formData.append("dummy_name", dataset);
+    } else if (uploadedFile) {
+      formData.append("use_dummy", "false");
+      formData.append("filename", uploadedFile.name);
+    } else {
+      alert("Please upload a file OR choose a dataset.");
+      return;
+    }
+  
+    try {
+      const response = await fetch(`${backendURL}/compute_stats/`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+      setStats(data);
+    } catch (err) {
+      console.error("Error fetching stats:", err);
+      setStats({ error: "Failed to compute stats" });
+    }
+  };
+  
 
   // ------------------------
   // PARAMETERS endpoint
@@ -325,99 +372,144 @@ const Tool1 = () => {
         <Card className="step-content-card">
           {/* UPLOAD */}
           {currentStep === 'upload' && (
-            <div className="step-upload">
-              <CardHeader>
-                <CardTitle>Upload Dataset</CardTitle>
-                <CardDescription>Only .txt files supported</CardDescription>
-              </CardHeader>
+  <div className="step-upload">
+    <CardHeader>
+      <CardTitle>Upload Dataset</CardTitle>
+      <CardDescription>Only .txt files supported</CardDescription>
+    </CardHeader>
 
-              <CardContent className="drop-box space-y-6">
-                {/* drag & drop area */}
-                <div
-                  className={`upload-box ${currentStep !== 'upload' ? 'disabled' : ''}`}
-                  ref={dropRef}
-                  onDrop={handleDrop}
-                  onDragOver={(e) => e.preventDefault()}
-                >
-                  <label htmlFor="file-upload" className="file-upload-label cursor-pointer">
-                    <div className="upload-icon text-3xl">☁️</div>
-                    <div>
-                      {uploadedFile ? (
-                        <div className="file-display flex items-center justify-center gap-4">
-                          <span className='text-black'>{uploadedFile.name}</span>
-                          <Button variant="outline" className='text-white bg-purple-500' size="sm" onClick={handleViewFile} disabled={currentStep !== 'upload'}>
-                            View Dataset
-                          </Button>
-                        </div>
-                      ) : (
-                        <span className="text-black">Drag and drop a txt file here, or click to select a txt file</span>
-                      )}
-                    </div>
-                  </label>
-
-                  {/* native file input (hidden) */}
-                  <input
-                    id="file-upload"
-                    type="file"
-                    accept=".txt"
-                    onChange={handleFileChange}
-                    className="file-input hidden"
-                    disabled={currentStep !== 'upload'}
-                  />
-
-                  {/* dataset dropdown for presets */}
-                  <div className="dropdown-group mt-4">
-                    <span className="block mb-1 text-black">Or use available ones</span>
-                    <select
-                      value={dataset}
-                      onChange={async (e) => {
-                        const selected = e.target.value;
-                        if (selected === '') {
-                          setDataset('');
-                          setUploadedFile(null);
-                          setFetchedText('');
-                          setFileText('');
-                          return;
-                        }
-
-                        setDataset(selected);
-                        try {
-                          // NOTE: this assumes a relative /datasets/<file> available on frontend server
-                          const response = await fetch(`/datasets/${selected}`);
-                          const blob = await response.blob();
-                          const file = new File([blob], selected, { type: blob.type || 'text/plain' });
-                          setUploadedFile(file);
-                          const text = await blob.text();
-                          setFetchedText(text);
-                          setFileText('');
-                        } catch (err) {
-                          console.error('Error loading dataset:', err);
-                          setFetchedText('');
-                          setFileText('');
-                          setUploadedFile(null);
-                          setError('Failed to load preset dataset.');
-                        }
-                      }}
-                      className="dropdown border rounded px-2 py-1 text-black"
-                      disabled={currentStep !== 'upload'}
-                    >
-                      <option value="">-- Select a dataset --</option>
-                      <option value="graph_transactional_dataset1.txt">graph_transactional_dataset1.txt</option>
-                      <option value="graph_transactional_dataset2.txt">graph_transactional_dataset2.txt</option>
-                      <option value="graph_transactional_dataset3.txt">graph_transactional_dataset3.txt</option>
-                      <option value="graph_transactional_dataset4.txt">graph_transactional_dataset4.txt</option>
-                    </select>
-                  </div>
-                </div>
-
-                {error && <p className="error-message text-red-500">{error}</p>}
-
-                <Button onClick={handleNext} disabled={!uploadedFile} className="w-full bg-purple-600 text-white hover:bg-purple-700">
-                  Continue to Parameters
+    <CardContent className="drop-box space-y-6">
+      {/* drag & drop area */}
+      <div
+        className={`upload-box ${currentStep !== 'upload' ? 'disabled' : ''}`}
+        ref={dropRef}
+        onDrop={handleDrop}
+        onDragOver={(e) => e.preventDefault()}
+      >
+        <label htmlFor="file-upload" className="file-upload-label cursor-pointer">
+          <div className="upload-icon text-3xl">☁️</div>
+          <div>
+            {uploadedFile ? (
+              <div className="file-display flex items-center justify-center gap-4">
+                <span className='text-black'>{uploadedFile.name}</span>
+                <Button variant="outline" className='text-white bg-purple-500' size="sm" onClick={handleViewFile}>
+                  View Dataset
                 </Button>
-              </CardContent>
-            </div>
-          )}
+              </div>
+            ) : (
+              <span className="text-black">Drag and drop a txt file here, or click to select</span>
+            )}
+          </div>
+        </label>
+
+        {/* hidden native input */}
+        <input
+          id="file-upload"
+          type="file"
+          accept=".txt"
+          onChange={handleFileChange}
+          className="file-input hidden"
+        />
+
+        {/* dataset dropdown */}
+        <div className="dropdown-group mt-4">
+          <span className="block mb-1 text-black">Or use available ones</span>
+          <select
+            value={dataset}
+            onChange={async (e) => {
+              const selected = e.target.value;
+              if (selected === '') {
+                setDataset('');
+                setUploadedFile(null);
+                setFetchedText('');
+                setFileText('');
+                return;
+              }
+
+              setDataset(selected);
+              try {
+                const response = await fetch(`/datasets/${selected}`);
+                const blob = await response.blob();
+                const file = new File([blob], selected, { type: blob.type || 'text/plain' });
+                setUploadedFile(file);
+                const text = await blob.text();
+                setFetchedText(text);
+                setFileText('');
+              } catch (err) {
+                console.error('Error loading preset dataset:', err);
+                setFetchedText('');
+                setFileText('');
+                setUploadedFile(null);
+                setError('Failed to load preset dataset.');
+              }
+            }}
+            className="dropdown border rounded px-2 py-1 text-black"
+          >
+            <option value="">-- Select a dataset --</option>
+            <option value="graph_transactional_dataset1.txt">graph_transactional_dataset1.txt</option>
+            <option value="graph_transactional_dataset2.txt">graph_transactional_dataset2.txt</option>
+            <option value="graph_transactional_dataset3.txt">graph_transactional_dataset3.txt</option>
+            <option value="graph_transactional_dataset4.txt">graph_transactional_dataset4.txt</option>
+          </select>
+        </div>
+      </div>
+
+      {error && <p className="error-message text-red-500">{error}</p>}
+
+      {/*  VIEW STATS BUTTON */}
+      <Button
+  onClick={handleViewStats}
+  className="w-full bg-purple-500 text-white hover:bg-purple-600"
+>
+  {statsVisible ? "Hide Dataset Stats" : "View Dataset Stats"}
+</Button>
+
+
+      {/*   STATS DISPLAY */}
+      {statsVisible && (
+  <Card className="mt-4 p-6 bg-purple-50 border border-purple-300 rounded-xl">
+    <h3 className="text-xl font-bold text-center mb-4 text-purple-800">
+      Dataset Statistics
+    </h3>
+
+    {!stats ? (
+      <p className="text-center">Loading stats...</p>
+    ) : stats.error ? (
+      <p className="text-red-500 text-center">{stats.error}</p>
+    ) : (
+      <div className="grid grid-cols-2 gap-4 text-sm text-gray-800">
+        {/* <div><strong>Total SMILES</strong></div><div>{stats.total_smiles}</div>
+        <div><strong>Valid SMILES</strong></div><div>{stats.valid_smiles}</div>
+        <div><strong>Invalid SMILES</strong></div><div>{stats.invalid_smiles}</div> */}
+
+        <div><strong>Average Vertices</strong></div><div>{stats.avg_vertices}</div>
+        <div><strong>Average Edges</strong></div><div>{stats.avg_edges}</div>
+        <div><strong>Average Density</strong></div><div>{stats.avg_density.toFixed(4)}</div>
+        <div><strong>Average Clustering</strong></div><div>{stats.avg_clustering.toFixed(4)}</div>
+
+        <div><strong>Min Vertices</strong></div><div>{stats.min_vertices}</div>
+        <div><strong>Max Vertices</strong></div><div>{stats.max_vertices}</div>
+
+        <div><strong>Min Edges</strong></div><div>{stats.min_edges}</div>
+        <div><strong>Max Edges</strong></div><div>{stats.max_edges}</div>
+      </div>
+    )}
+  </Card>
+)}
+
+
+      {/* Continue */}
+      <Button
+        onClick={handleNext}
+        disabled={!uploadedFile && !dataset}
+        className="w-full bg-purple-600 text-white hover:bg-purple-700"
+      >
+        Continue to Parameters
+      </Button>
+
+    </CardContent>
+  </div>
+)}
 
           {/* PARAMETERS */}
           {currentStep === 'parameters' && (

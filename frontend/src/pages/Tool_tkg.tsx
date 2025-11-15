@@ -40,7 +40,12 @@ const Tool2 = () => {
   const [images, setImages] = useState<ImageData[]>([]);
   const [isCarouselVisible, setCarouselVisible] = useState(false);
 
-  // file preview modal
+  // stats variables
+  // graph statistics
+const [graphStats, setGraphStats] = useState<any>(null);
+const [statsVisible, setStatsVisible] = useState(false);
+
+  //   // file preview modal
   const [showFileModal, setShowFileModal] = useState(false);
 
   const dropRef = useRef<HTMLDivElement | null>(null);
@@ -134,6 +139,43 @@ const Tool2 = () => {
       // setError("File upload failed. See console for details.");
     }
   };
+// ------------------------
+// VIEW GRAPH STATS (toggle + API call)
+// ------------------------
+const handleViewGraphStats = async () => {
+  if (statsVisible) {
+    setStatsVisible(false);
+    return;
+  }
+
+  setStatsVisible(true);
+  setGraphStats(null);
+
+  const formData = new FormData();
+
+  if (uploadedFile) {
+    formData.append("filename", uploadedFile.name);
+    formData.append("use_dummy", "false");
+  } else if (dataset) {
+    formData.append("dummy_name", dataset);
+    formData.append("use_dummy", "true");
+  } else {
+    alert("Please upload or select a dataset first.");
+    return;
+  }
+
+  try {
+    const response = await fetch(`${backendURL}/compute_graph_stats/`, {
+      method: "POST",
+      body: formData,
+    });
+    const data = await response.json();
+    setGraphStats(data);
+  } catch (error) {
+    console.error("Error fetching graph stats:", error);
+    setGraphStats({ error: "Failed to fetch graph statistics." });
+  }
+};
 
   // ------------------------
   // RUN ALGORITHM
@@ -321,101 +363,161 @@ const Tool2 = () => {
 
         {/* step content */}
         <Card className="step-content-card">
-          {/* UPLOAD */}
-          {currentStep === 'upload' && (
-            <div className="step-upload">
-              <CardHeader>
-                <CardTitle>Upload Dataset</CardTitle>
-                <CardDescription>Only .txt files supported</CardDescription>
-              </CardHeader>
+{/* UPLOAD */}
+{currentStep === 'upload' && (
+  <div className="step-upload">
+    <CardHeader>
+      <CardTitle>Upload Dataset</CardTitle>
+      <CardDescription>Only .txt files supported</CardDescription>
+    </CardHeader>
 
-              <CardContent className="drop-box space-y-6">
-                {/* drag & drop area */}
-                <div
-                  className={`upload-box ${currentStep !== 'upload' ? 'disabled' : ''}`}
-                  ref={dropRef}
-                  onDrop={handleDrop}
-                  onDragOver={(e) => e.preventDefault()}
-                >
-                  <label htmlFor="file-upload" className="file-upload-label cursor-pointer">
-                    <div className="upload-icon text-3xl">☁️</div>
-                    <div>
-                      {uploadedFile ? (
-                        <div className="file-display flex items-center justify-center gap-4">
-                          <span className='text-black'>{uploadedFile.name}</span>
-                          <Button className= 'text-white bg-purple-500' variant="outline" size="sm" onClick={handleViewFile} disabled={currentStep !== 'upload'}>
-                            VIEW
-                          </Button>
-                        </div>
-                      ) : (
-                        <span className="text-black">Drag and drop a txt file here, or click to select a txt file</span>
-                      )}
-                    </div>
-                  </label>
+    <CardContent className="drop-box space-y-6">
 
-                  {/* native file input (hidden) */}
-                  <input
-                    id="file-upload"
-                    type="file"
-                    accept=".txt"
-                    onChange={handleFileChange}
-                    className="file-input hidden"
-                    disabled={currentStep !== 'upload'}
-                  />
-
-                  {/* dataset dropdown for presets */}
-                  <div className="dropdown-group mt-4">
-                    <span className="block mb-1 text-black">Or use available ones</span>
-                    <select
-                      value={dataset}
-                      onChange={async (e) => {
-                        const selected = e.target.value;
-                        if (selected === '') {
-                          setDataset('');
-                          setUploadedFile(null);
-                          setFetchedText('');
-                          setFileText('');
-                          return;
-                        }
-
-                        setDataset(selected);
-                        try {
-                          // NOTE: this assumes a relative /datasets/<file> available on frontend server
-                          const response = await fetch(`/datasets1/${selected}`);
-                          const blob = await response.blob();
-                          const file = new File([blob], selected, { type: blob.type || 'text/plain' });
-                          setUploadedFile(file);
-                          const text = await blob.text();
-                          setFetchedText(text);
-                          setFileText('');
-                        } catch (err) {
-                          console.error('Error loading dataset:', err);
-                          setFetchedText('');
-                          setFileText('');
-                          setUploadedFile(null);
-                          setError('Failed to load preset dataset.');
-                        }
-                      }}
-                      className="dropdown border rounded px-2 py-1 text-black"
-                      disabled={currentStep !== 'upload'}
-                    >
-                      <option value="">-- Select a dataset --</option>
-                      <option value="graph_dataset1.txt">graph_dataset1.txt</option>
-                      <option value="graph_dataset2.txt">graph_dataset2.txt</option>
-                      <option value="graph_dataset3.txt">graph_dataset3.txt</option>
-                      <option value="graph_dataset4.txt">graph_dataset4.txt</option>
-                    </select>
-                  </div>
-                </div>
-
-                {error && <p className="error-message text-red-500">{error}</p>}
-
-                <Button onClick={handleNext} disabled={!uploadedFile} className="w-full bg-purple-600 text-white hover:bg-purple-700">
-                  Continue to Parameters
+      {/* drag & drop area */}
+      <div
+        className={`upload-box ${currentStep !== 'upload' ? 'disabled' : ''}`}
+        ref={dropRef}
+        onDrop={handleDrop}
+        onDragOver={(e) => e.preventDefault()}
+      >
+        <label htmlFor="file-upload" className="file-upload-label cursor-pointer">
+          <div className="upload-icon text-3xl">☁️</div>
+          <div>
+            {uploadedFile ? (
+              <div className="file-display flex items-center justify-center gap-4">
+                <span className='text-black'>{uploadedFile.name}</span>
+                <Button
+                  className='text-white bg-purple-500'
+                  variant="outline"
+                  size="sm"
+                  onClick={handleViewFile}
+                  disabled={currentStep !== 'upload'}>
+                  VIEW
                 </Button>
-              </CardContent>
-            </div>
-          )}
+              </div>
+            ) : (
+              <span className="text-black">Drag and drop a txt file here, or click to select a txt file</span>
+            )}
+          </div>
+        </label>
+
+        {/* hidden file input */}
+        <input
+          id="file-upload"
+          type="file"
+          accept=".txt"
+          onChange={handleFileChange}
+          className="file-input hidden"
+          disabled={currentStep !== 'upload'}
+        />
+
+        {/* dataset dropdown */}
+        <div className="dropdown-group mt-4">
+          <span className="block mb-1 text-black">Or use available ones</span>
+
+          <select
+            value={dataset}
+            onChange={async (e) => {
+              const selected = e.target.value;
+
+              if (selected === '') {
+                setDataset('');
+                setUploadedFile(null);
+                setFetchedText('');
+                setFileText('');
+                return;
+              }
+
+              setDataset(selected);
+
+              try {
+                const response = await fetch(`/datasets1/${selected}`);
+                const blob = await response.blob();
+                const file = new File([blob], selected, { type: blob.type || "text/plain" });
+                setUploadedFile(file);
+
+                const text = await blob.text();
+                setFetchedText(text);
+                setFileText('');
+
+              } catch (err) {
+                console.error('Error loading dataset:', err);
+                setFetchedText('');
+                setFileText('');
+                setUploadedFile(null);
+                setError('Failed to load preset dataset.');
+              }
+            }}
+            className="dropdown border rounded px-2 py-1 text-black"
+            disabled={currentStep !== 'upload'}
+          >
+            <option value="">-- Select a dataset --</option>
+            <option value="graph_dataset1.txt">graph_dataset1.txt</option>
+            <option value="graph_dataset2.txt">graph_dataset2.txt</option>
+            <option value="graph_dataset3.txt">graph_dataset3.txt</option>
+            <option value="graph_dataset4.txt">graph_dataset4.txt</option>
+          </select>
+        </div>
+
+        {/* View Stats Button */}
+        <Button
+          onClick={handleViewGraphStats}
+          className="mt-4 w-full bg-purple-500 text-white hover:bg-purple-600"
+          disabled={!uploadedFile}
+        >
+          {statsVisible ? "Hide Graph Stats" : "View Graph Stats"}
+        </Button>
+
+        {/* Graph Stats Box INSIDE upload area */}
+        {statsVisible && (
+          <div className="mt-4 p-4 bg-purple-50 border border-purple-300 rounded-xl">
+            <h3 className="text-lg font-bold text-black mb-3">Graph Statistics</h3>
+
+
+            {!graphStats ? (
+              <p className="text-center text-black mb-3">Loading...</p>
+            ) : graphStats.error ? (
+              <p className="text-red-500 text-center">{graphStats.error}</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 text-sm text-black">
+                <div className="font-semibold">Total Graphs:</div><div>{graphStats.total_graphs}</div>
+                <div className="font-semibold">Avg Nodes:</div><div>{graphStats.avg_nodes}</div>
+                <div className="font-semibold">Avg Edges:</div><div>{graphStats.avg_edges}</div>
+                <div className="font-semibold">Min Graph Size:</div><div>{graphStats.min_graph_size}</div>
+                <div className="font-semibold">Max Graph Size:</div><div>{graphStats.max_graph_size}</div>
+                <div className="font-semibold">Avg Density:</div><div>{graphStats.avg_density?.toFixed(4)}</div>
+                <div className="font-semibold">Avg Clustering:</div><div>{graphStats.avg_clustering?.toFixed(4)}</div>
+              </div>
+            )}
+
+            {graphStats?.label_distribution && (
+              <div className="mt-3">
+                <h4 className="font-semibold text-black mb-2">Label Distribution</h4>
+                <ul className="list-none ml-0 text-sm text-black">
+                  {Object.entries(graphStats.label_distribution).map(([label, count]) => (
+                    <li key={String(label)}>Label {String(label)}: {String(count)}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
+      </div>
+
+      {error && <p className="error-message text-red-500">{error}</p>}
+
+      {/* Continue button */}
+      <Button
+        onClick={handleNext}
+        disabled={!uploadedFile}
+        className="w-full bg-purple-600 text-white hover:bg-purple-700"
+      >
+        Continue to Parameters
+      </Button>
+    </CardContent>
+  </div>
+)}
 
 {/* PARAMETERS */}
 {currentStep === 'parameters' && (
